@@ -43,15 +43,15 @@ spec:
           # force login (required by schematics cli)
           ibmcloud login --apikey $API_KEY -a "https://cloud.ibm.com" $REGION
           # run terraform plan
-          echo "ibmcloud terraform plan --id $WORKSPACE_ID"
-          ACTIVITY=$(ibmcloud terraform plan -id $WORKSPACE_ID --json)
+          echo "ibmcloud terraform plan --id $WORKSPACE_ID -lock=false"
+          ACTIVITY=$(ibmcloud terraform plan -id $WORKSPACE_ID -lock=false --json)
           ACTIVITY_ID=$(echo $ACTIVITY | jq -r ".activityid")
           echo "Activity ID   $ACTIVITY_ID"
           # poll until status is no longer INPROGRESS, or if there is an error
           while :
           do
             STATUS=$(ibmcloud terraform workspace action --id $WORKSPACE_ID --act-id $ACTIVITY_ID --json)
-            
+
             RET_VAL=$?
             if [ $RET_VAL -ne 0 ]; then
               echo $STATUS
@@ -59,10 +59,10 @@ spec:
             else
               STATUS_VALUE=$(echo $STATUS | jq -r ".status")
               echo "Polling for status: $STATUS_VALUE"
-              if [ "$STATUS_VALUE" = "FAILED" ]; then 
+              if [ "$STATUS_VALUE" = "FAILED" ]; then
                 ibmcloud terraform logs --id $WORKSPACE_ID --act-id $ACTIVITY_ID
                 exit 1
-              elif [ "$STATUS_VALUE" != "INPROGRESS" ] && [ "$STATUS_VALUE" != "CREATED" ]; then  
+              elif [ "$STATUS_VALUE" != "INPROGRESS" ] && [ "$STATUS_VALUE" != "CREATED" ]; then
                 break
               fi
             fi
